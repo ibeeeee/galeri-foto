@@ -30,9 +30,13 @@ $routes->set404Override();
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
 $routes->get('/', 'AppController::home');
+$routes->get('/(:num)', 'AppController::home2/$1');
 
 $routes->get("tambah_foto","AppController::tambah_foto");
 $routes->post("proses_tambah_foto","AppController::proses_tambah_foto");
+
+$routes->get("tambah_album","AppController::tambah_album");
+$routes->post("proses_tambah_album","AppController::proses_tambah_album");
 
 $routes->get("data_foto","AppController::data_foto");
 
@@ -43,11 +47,13 @@ $routes->post("proses_edit_foto","AppController::proses_edit_foto");
 
 $routes->get("foto/(:num)/preview","AppController::preview_foto/$1");
 
-$routes->post("proses_tambah_komentar","AppController::proses_tambah_komentar");
+
 
 // $routes->group('like', function ($routes) {
 //     $routes->post('post/(:num)', 'AppController::like_post/$1');
 // });
+
+$routes->post("proses_tambah_komentar","AppController::proses_tambah_komentar");
 
 $routes->post("like/(:num)","AppController::like/$1");
 

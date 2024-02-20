@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Controllers;
 
-class AppController extends BaseController{
+class AppController extends BaseController
+{
 
     private $fotoModel;
     private $userModel;
@@ -10,50 +12,82 @@ class AppController extends BaseController{
     private $komentarModel;
     private $session;
 
-    public function __construct(){
+    public function __construct()
+    {
         $this->fotoModel = new \App\Models\foto();
         $this->userModel = new \App\Models\user();
         $this->albumModel = new \App\Models\album();
         $this->likeModel = new \App\Models\like();
-        $this->komentarModel = new \App\Models\komentar();     
-        $this->session = \Config\Services::session();   
+        $this->komentarModel = new \App\Models\komentar();
+        $this->session = \Config\Services::session();
+
+        if ($this->session->user_id == null) {
+            $this->session->setFlashdata('pesan', "Login Terlebih Dahulu");
+            header("location:" . base_url('login'));
+            exit();
+        }
     }
-    public function template(){ 
-        return view("template");
+    public function template()
+    {
+        return view("template",$data);
     }
-    public function home(){ 
+    public function home()
+    {
         $judul_foto = $this->request->getVar("judul_foto");
-        if($judul_foto == null){
+        if ($judul_foto == null) {
             $rows = $this->fotoModel
-                ->orderBy("judul_foto","asc")
+                ->orderBy("judul_foto", "asc")
                 ->FindAll();
-        }else{
+        } else {
             $rows = $this->fotoModel
-                ->orderBy("judul_foto","asc")
+                ->orderBy("judul_foto", "asc")
                 ->like("judul_foto", $judul_foto)
                 ->findall();
         }
+        $rows1 = $this->albumModel
+                ->orderBy("album_id", "asc")
+                ->FindAll();
+
         $data = ([
             "rows" => $rows,
+            "rows1" => $rows1,
         ]);
-        return view("home",$data);
-    }  
-    public function tambah_foto(){
-        $rows1 = $this->albumModel
-                ->orderBy("album_id","asc")
+        return view("home", $data);
+    }
+    public function home2($id)
+    {
+        $rows = $this->fotoModel
+                ->orderBy("judul_foto", "asc")
+                ->where("album_id",$id)
                 ->FindAll();
+    
+        $rows1 = $this->albumModel
+                ->orderBy("album_id", "asc")
+                ->FindAll();
+
+        $data = ([
+            "rows" => $rows,
+            "rows1" => $rows1,
+        ]);
+        return view("home", $data);
+    }
+    public function tambah_foto()
+    {
+        $rows1 = $this->albumModel
+            ->orderBy("album_id", "asc")
+            ->FindAll();
         $rows2 = $this->userModel
-                ->orderBy("user_id","asc")
-                ->FindAll();                
+            ->orderBy("user_id", "asc")
+            ->FindAll();
 
         $data = ([
             "rows1" => $rows1,
             "rows2" => $rows2,
         ]);
-        return view("tambah_foto",$data);
+        return view("tambah_foto", $data);
     }
-    public function proses_tambah_foto(){
-        $this->session->setFlashdata('alert', 'Data berhasil ditambah');
+    public function proses_tambah_foto()
+    {
         $judul_foto         = $this->request->getpost("judul_foto");
         $deskripsi_foto     = $this->request->getpost("deskripsi_foto");
         $tanggal_unggah     = date("Y-m-d");
@@ -61,9 +95,9 @@ class AppController extends BaseController{
         $user_id            = $this->session->user_id;
 
         $lokasi_file        = $this->request->getFile("lokasi_file");
-        $namafoto           = $user_id."_".$lokasi_file->getRandomName();
+        $namafoto           = $user_id . "_" . $lokasi_file->getRandomName();
 
-        $lokasi_file->move("assets/foto",$namafoto);
+        $lokasi_file->move("assets/foto", $namafoto);
 
         $this->fotoModel->insert([
             "judul_foto"        => $judul_foto,
@@ -76,55 +110,90 @@ class AppController extends BaseController{
 
         return redirect()->to(base_url("/"));
     }
-    public function data_foto(){
+
+    public function tambah_album()
+    {
+        $rows1 = $this->userModel
+            ->orderBy("user_id", "asc")
+            ->FindAll();
+
+        $data = ([
+            "rows1" => $rows1,
+        ]);
+        return view("tambah_album", $data);
+    }
+    public function proses_tambah_album()
+    {
+        $nama_album         = $this->request->getpost("nama_album");
+        $deskripsi          = $this->request->getpost("deskripsi");
+        $tanggal_dibuat     = date("Y-m-d");
+        $user_id            = $this->session->user_id;
+
+        $this->albumModel->insert([
+            "nama_album"        => $nama_album,
+            "deskripsi"         => $deskripsi,
+            "tanggal_dibuat"    => $tanggal_dibuat,
+            "user_id"           => $user_id,
+        ]);
+
+        return redirect()->to(base_url("/"));
+    }
+
+
+    public function data_foto()
+    {
         $rows = $this->fotoModel
-                ->join("album","album.album_id=foto.album_id","left")
-                ->join("user","user.user_id=foto.user_id","left")                            
-                ->orderBy("foto_id","asc")
-                ->FindAll();
+            ->join("album", "album.album_id=foto.album_id", "left")
+            ->join("user", "user.user_id=foto.user_id", "left")
+            ->orderBy("foto_id", "asc")
+            ->FindAll();
 
         $data = ([
             "rows" => $rows,
         ]);
-        return view("data_foto",$data);
+        return view("data_foto", $data);
     }
-    public function data_album(){
+    public function data_album()
+    {
         $rows1 = $this->albumModel
-                ->orderBy("album_id","asc")
-                ->FindAll();
+            ->orderBy("album_id", "asc")
+            ->FindAll();
 
         $data = ([
             "rows1" => $rows1,
         ]);
 
-        return view("data_foto",$data);
+        return view("data_foto", $data);
     }
-    public function data_user(){
+    public function data_user()
+    {
         $rows2 = $this->userModel
-                ->orderBy("user_id","asc")
-                ->FindAll();
+            ->orderBy("user_id", "asc")
+            ->FindAll();
 
         $data = ([
             "rows2" => $rows2,
         ]);
 
-        return view("data_foto",$data);
-    }    
-    public function hapus_foto($foto_id){
+        return view("data_foto", $data);
+    }
+    public function hapus_foto($foto_id)
+    {
         $this->fotoModel
-        ->where("foto_id",$foto_id)->delete();
+            ->where("foto_id", $foto_id)->delete();
         return redirect()->to(base_url());
     }
-    public function edit_foto($foto_id){
+    public function edit_foto($foto_id)
+    {
         $foto = $this->fotoModel
-                       ->where("foto_id",$foto_id)
-                       ->first();
+            ->where("foto_id", $foto_id)
+            ->first();
         $rows1 = $this->albumModel
-                       ->orderBy("album_id","asc")
-                       ->FindAll();
+            ->orderBy("album_id", "asc")
+            ->FindAll();
         $rows2 = $this->userModel
-                       ->orderBy("user_id","asc")
-                       ->FindAll();                       
+            ->orderBy("user_id", "asc")
+            ->FindAll();
 
         $data = ([
             "foto"      => $foto,
@@ -133,62 +202,78 @@ class AppController extends BaseController{
 
         ]);
 
-        return view("edit_foto",$data);
+        return view("edit_foto", $data);
     }
-    public function proses_edit_foto(){
-        $foto_id            = $this->request->getpost("foto_id");        
+    public function proses_edit_foto()
+    {
+        $foto_id           = $this->request->getpost("foto_id");
         $judul_foto         = $this->request->getpost("judul_foto");
         $deskripsi_foto     = $this->request->getpost("deskripsi_foto");
-        $tanggal_unggah     = $this->request->getpost("tanggal_unggah");
+        $tanggal_unggah     = date("Y-m-d");
         $album_id           = $this->request->getpost("album_id");
-        $user_id            = $this->request->getpost("user_id");
+        $user_id            = $this->session->user_id;
 
-
-        if($this->request->getFile("lokasi_file")->getName() != NULL){
+        if ($this->request->getFile("lokasi_file")->getName() != NULL) {
             $lokasi_file = $this->request->getFile("lokasi_file");
-            $namafoto = $foto_id."_".$lokasi_file->getRandomName();
+            $namafoto = $foto_id . "_" . $lokasi_file->getRandomName();
 
-            $lokasi_file->move("assets/foto",$namafoto);        
+            $lokasi_file->move("assets/foto", $namafoto);
             $this->fotoModel
-            ->where("foto_id",$foto_id)
-            ->set([
-                "judul_foto"        => $judul_foto,
-                "deskripsi_foto"    => $deskripsi_foto,
-                "tanggal_unggah"    => $tanggal_unggah,
-                "album_id"          => $album_id,
-                "user_id"           => $user_id,
-                "lokasi_file"       => $namafoto
+                ->where("foto_id", $foto_id)
+                ->set([
+                    "foto_id"        => $foto_id,
+                    "judul_foto"        => $judul_foto,
+                    "deskripsi_foto"    => $deskripsi_foto,
+                    "tanggal_unggah"    => $tanggal_unggah,
+                    "album_id"          => $album_id,
+                    "user_id"           => $user_id,
+                    "lokasi_file"       => $namafoto
 
-            ])->update();
-        }else{
+                ])->update();
+        } else {
             $this->fotoModel
-            ->where("foto_id",$foto_id)
-            ->set([
-                "foto_id"           => $foto_id,                
-                "judul_foto"        => $judul_foto,
-                "deskripsi_foto"    => $deskripsi_foto,
-                "tanggal_unggah"    => $tanggal_unggah,
-                "album_id"          => $album_id,
-                "user_id"           => $user_id,
+                ->where("foto_id", $foto_id)
+                ->set([
+                    "foto_id"        => $foto_id,
+                    "judul_foto"        => $judul_foto,
+                    "deskripsi_foto"    => $deskripsi_foto,
+                    "tanggal_unggah"    => $tanggal_unggah,
+                    "album_id"          => $album_id,
+                    "user_id"           => $user_id,
 
-            ])->update();
-
+                ])->update();
         }
 
-        return redirect()->to(base_url('data_foto'));
-        return redirect()->to(base_url('foto/'.$foto_id.'/edit'));
+        return redirect()->to(base_url('/'));
     }
-    public function preview_foto($foto_id){
+    public function preview_foto($foto_id)
+    {
         $userId = session()->user_id;
 
         $foto = $this->fotoModel
-                ->join("user","user.user_id=foto.user_id","left")
-                ->where("foto_id",$foto_id)
-                ->first();
-        
+            ->join("user", "user.user_id=foto.user_id", "left")
+            ->where("foto_id", $foto_id)
+            ->first();
+
+        $rows1 = $this->albumModel
+            ->orderBy("album_id", "asc")
+            ->FindAll();
         $komentar = $this->komentarModel
-                    ->where("foto_id",$foto_id)
-                    ->findall();
+            ->where("foto_id", $foto_id)
+            ->findall();
+
+        $usernames = array();
+
+        foreach ($komentar as $comment) {
+            $user_id = $comment->user_id;
+            $user = $this->userModel
+                ->where("user_id", $user_id)
+                ->first();
+
+            $username = $user->username;
+
+            $usernames[] = $username;
+        }
 
         $like = $this->likeModel->where("foto_id", $foto_id)->countAllResults();
 
@@ -196,14 +281,17 @@ class AppController extends BaseController{
 
         $data = ([
             "foto" => $foto,
+            "rows1" => $rows1,
             "komentar" => $komentar,
             "like" => $like,
-            "isLiked" => $isLiked
+            "isLiked" => $isLiked,
+            "usernames" => $usernames
         ]);
 
-        return view("preview_foto",$data);
+        return view("preview_foto", $data);
     }
-    public function proses_tambah_komentar(){
+    public function proses_tambah_komentar()
+    {
         $foto_id                   = $this->request->getPost("id");
         $isi_komentar         = $this->request->getpost("isi_komentar");
         $tanggal_komentar     = date("Y-m-d");
@@ -217,7 +305,7 @@ class AppController extends BaseController{
             "tanggal_komentar"    => $tanggal_komentar,
         ]);
 
-        return redirect()->to(base_url("foto/".$foto_id."/preview"));
+        return redirect()->to(base_url("foto/" . $foto_id . "/preview"));
     }
     // public function like_post($foto_id)
     // {
@@ -233,26 +321,28 @@ class AppController extends BaseController{
     //         $this->likeModel->addlike($foto_id, $user_id);
     //         $response = ['status' => 'liked'];
     //     }
-    
+
     //     // Mengembalikan respons dalam format JSON
     //     return $this->response->setJSON($response);
     // }
-    public function like($id){
+    public function like($id)
+    {
         $userId = session()->user_id;
 
         if ($userId) {
             $like = $this->likeModel->where('foto_id', $id)->where('user_id', $userId)->first();
 
             if ($like) {
-                $this->likeModel->where("foto_id",$id)->where('user_id', $userId)->delete();
+                $this->likeModel->where("foto_id", $id)->where('user_id', $userId)->delete();
             } else {
                 $this->likeModel->insert(['foto_id' => $id, 'user_id' => $userId]);
             }
 
-            return redirect()->to(base_url("foto/".$id."/preview"));
+            return redirect()->to(base_url("foto/" . $id . "/preview"));
         }
     }
-    public function logout(){
+    public function logout()
+    {
         session()->destroy();
         return redirect()->to(base_url('login'));
     }
